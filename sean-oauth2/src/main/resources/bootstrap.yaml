@@ -1,0 +1,19 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: oauth-service
+
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      config:
+        name: oauth-service.yaml
+        namespace: 85a83d3a-f2af-4927-b4f8-a713ae88814f
+  profiles:
+    active: dev
+
+
+
+

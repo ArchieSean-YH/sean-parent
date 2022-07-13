@@ -1,0 +1,20 @@
+server:
+  port: 10000
+
+spring:
+  application:
+    name: sean-snowflake
+
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      discovery:
+        namespace: 85a83d3a-f2af-4927-b4f8-a713ae88814f
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+# logging:
+#   level: debug
+#     config: classpath:logback.xml

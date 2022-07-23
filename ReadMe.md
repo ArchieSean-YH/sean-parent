@@ -7,7 +7,7 @@
 * springcloudAlibaba 2021.0.1.0
 * mysql 5.7
 * redisson
-
+* JDK17
 ## 项目结构划分
 
 * 按照业务逻辑一体，pojo和feign单独分离的方式进行使用。【方便其余系统使用pojo和feign】

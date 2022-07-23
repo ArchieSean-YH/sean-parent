@@ -10,7 +10,11 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
@@ -19,7 +23,9 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -36,43 +42,54 @@ import java.util.UUID;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
     /**
-     * 密码加解密
+     * 这是个Spring security 的过滤器链，默认会配置
+     * <p>
+     * OAuth2 Authorization endpoint
+     * <p>
+     * OAuth2 Token endpoint
+     * <p>
+     * OAuth2 Token Introspection endpoint
+     * <p>
+     * OAuth2 Token Revocation endpoint
+     * <p>
+     * OAuth2 Authorization Server Metadata endpoint
+     * <p>
+     * JWK Set endpoint
+     * <p>
+     * OpenID Connect 1.0 Provider Configuration endpoint
+     * <p>
+     * OpenID Connect 1.0 UserInfo endpoint
+     * 这些协议端点，只有配置了他才能够访问的到接口地址（类似mvc的controller）。
      *
-     * @return BCryptPasswordEncoder 密码加密
+     * @param http
+     * @return
+     * @throws Exception
      */
     @Bean
-    public BCryptPasswordEncoder bCryptPasswordEncoder() {
-        return new BCryptPasswordEncoder();
+    @Order(1)
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
+            throws Exception {
+        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+        http
+                // Redirect to the login page when not authenticated from the
+                // authorization endpoint
+                .exceptionHandling((exceptions) -> exceptions
+                        .authenticationEntryPoint(
+                                new LoginUrlAuthenticationEntryPoint("/login"))
+                );
+
+        return http.build();
     }
 
-//    @Bean
-//    @Order(-1)
-//    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) {
-//        http.authorizeRequests()
-//                //需要放行的uri
-//                .antMatchers().permitAll()
-//                //其余请求全部过认证
-//                .anyRequest().authenticated().and().csrf().disable();
-//        return http.build();
-//    }
-
-//    @Bean
-//    @Order(1)
-//    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
-//            throws Exception {
-//        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-//        http
-//                // Redirect to the login page when not authenticated from the
-//                // authorization endpoint
-//                .exceptionHandling((exceptions) -> exceptions
-//                        .authenticationEntryPoint(
-//                                new LoginUrlAuthenticationEntryPoint("/login"))
-//                );
-//
-//        return http.build();
-//    }
-
+    /**
+     * 这个也是个Spring Security的过滤器链，用于Spring Security的身份认证。
+     *
+     * @param http
+     * @return
+     * @throws Exception
+     */
     @Bean
     @Order(2)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
@@ -81,55 +98,61 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorize) -> authorize
                         .anyRequest().authenticated()
                 )
-                //从认证服务器到登录页的重定向
+                // Form login handles the redirect to the login page from the
                 // authorization server filter chain
                 .formLogin(Customizer.withDefaults());
 
         return http.build();
     }
 
-//    @Bean
-//    public UserDetailsService userDetailsService() {
-//        UserDetails userDetails = User.withDefaultPasswordEncoder()
-//                .username("user")
-//                .password("password")
-//                .roles("USER")
-//                .build();
-//
-//        return new InMemoryUserDetailsManager(userDetails);
-//    }
+    /**
+     * 配置用户信息，或者配置用户数据来源，主要用于用户的检索。
+     *
+     * @return
+     */
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails userDetails = User.withDefaultPasswordEncoder()
+                .username("user")
+                .password("password")
+                .roles("USER")
+                .build();
 
+        return new InMemoryUserDetailsManager(userDetails);
+    }
+
+    /**
+     * oauth2 用于第三方认证，RegisteredClientRepository 主要用于管理第三方（每个第三方就是一个客户端）
+     *
+     * @return
+     */
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                //客户端id
                 .clientId("messaging-client")
-                //客户端密钥
                 .clientSecret("{noop}secret")
-                //客户端认证方式：client_secret_basic、client_secret_post、client_secret_jwt、private_key_jwt、none
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                //认证类型：授权码、刷新令牌、客户凭证
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                //认证地址
                 .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
                 .redirectUri("http://127.0.0.1:8080/authorized")
-                //定义客户端使用范围
                 .scope(OidcScopes.OPENID)
                 .scope("message.read")
                 .scope("message.write")
-                //客户端设置
                 .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
                 .build();
-        //返回值： 两种方式： 数据库持久化、内存中存储
-        //持久化客户端配置到数据库，[底层自带sql，建表、CRUD语句]
-        //new JdbcRegisteredClientRepository(new JdbcTemplate());
+
         return new InMemoryRegisteredClientRepository(registeredClient);
     }
 
+    /**
+     * 用于给access_token签名使用。
+     *
+     * @return JWKSource<SecurityContext>
+     */
     @Bean
-    public JWKSource jwkSource() {
+    public JWKSource<SecurityContext> jwkSource() {
         KeyPair keyPair = generateRsaKey();
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
         RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
@@ -141,6 +164,11 @@ public class SecurityConfig {
         return new ImmutableJWKSet<>(jwkSet);
     }
 
+    /**
+     * 生成秘钥对，为jwkSource提供服务。
+     *
+     * @return keyPair
+     */
     private static KeyPair generateRsaKey() {
         KeyPair keyPair;
         try {
@@ -153,6 +181,11 @@ public class SecurityConfig {
         return keyPair;
     }
 
+    /**
+     * 配置Authorization Server实例
+     *
+     * @return ProviderSettings
+     */
     @Bean
     public ProviderSettings providerSettings() {
         return ProviderSettings.builder().build();

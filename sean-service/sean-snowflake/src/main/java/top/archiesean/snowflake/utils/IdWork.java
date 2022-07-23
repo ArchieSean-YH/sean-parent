@@ -40,6 +40,10 @@ public class IdWork {
         }
     }
 
+    /**
+     * 获取雪花id
+     * @return long
+     */
     public synchronized long snowflakeId() {
         return snowflake.nextId();
     }

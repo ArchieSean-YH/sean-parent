@@ -6,7 +6,7 @@ spring:
     name: sean-snowflake
   cloud:
     nacos:
-      server-addr: 127.0.0.1:10086
+      server-addr: 47.99.161.255:10086
       config:
         namespace: 85a83d3a-f2af-4927-b4f8-a713ae88814f
         name: sean-snowflake-dev

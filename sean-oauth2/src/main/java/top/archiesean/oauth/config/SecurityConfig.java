@@ -4,31 +4,29 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import com.nimbusds.jose.proc.SecurityContext;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
-import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
+import javax.annotation.Resource;
+import javax.sql.DataSource;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.UUID;
@@ -39,102 +37,80 @@ import java.util.UUID;
  * @Author ArchieSean
  * @Date 2022-06-11 21:46
  */
-@Configuration
-@EnableWebSecurity
+@EnableGlobalMethodSecurity(securedEnabled = true,prePostEnabled = true)
 public class SecurityConfig {
 
+    @Resource
+    private AuthorizationUserDetail userDetails;
+    @Resource
+    private DataSource dataSource;
+
     /**
-     * 这是个Spring security 的过滤器链，默认会配置
-     * <p>
-     * OAuth2 Authorization endpoint
-     * <p>
-     * OAuth2 Token endpoint
-     * <p>
-     * OAuth2 Token Introspection endpoint
-     * <p>
-     * OAuth2 Token Revocation endpoint
-     * <p>
-     * OAuth2 Authorization Server Metadata endpoint
-     * <p>
-     * JWK Set endpoint
-     * <p>
-     * OpenID Connect 1.0 Provider Configuration endpoint
-     * <p>
-     * OpenID Connect 1.0 UserInfo endpoint
-     * 这些协议端点，只有配置了他才能够访问的到接口地址（类似mvc的controller）。
+     * 加密方式，使用Bcrypt散列加密
      *
-     * @param http
-     * @return
-     * @throws Exception
+     * @return BCryptPasswordEncoder
      */
     @Bean
-    @Order(1)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
-            throws Exception {
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-        http
-                // Redirect to the login page when not authenticated from the
-                // authorization endpoint
-                .exceptionHandling((exceptions) -> exceptions
-                        .authenticationEntryPoint(
-                                new LoginUrlAuthenticationEntryPoint("/login"))
-                );
+    public BCryptPasswordEncoder bCryptPasswordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-        return http.build();
+    @Bean
+    public JdbcTemplate getJdbcTemplate() {
+        return new JdbcTemplate(dataSource);
     }
 
     /**
      * 这个也是个Spring Security的过滤器链，用于Spring Security的身份认证。
+     * 同 security的配置
      *
-     * @param http
-     * @return
-     * @throws Exception
+     * @param http http
+     * @return 过滤器链
+     * @throws Exception 异常
      */
     @Bean
-    @Order(2)
+    @Order(1)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
             throws Exception {
         http
-                .authorizeHttpRequests((authorize) -> authorize
-                        .anyRequest().authenticated()
-                )
-                // Form login handles the redirect to the login page from the
-                // authorization server filter chain
-                .formLogin(Customizer.withDefaults());
-
+                .csrf().disable()
+                .httpBasic()
+                .and()
+                .formLogin()
+                .and()
+                .antMatcher("/login")
+                .antMatcher("/layout")
+                .authorizeHttpRequests()
+                .anyRequest()
+                .authenticated()
+                .and()
+                .userDetailsService(userDetails)
+                .passwordManagement(a -> bCryptPasswordEncoder())
+        ;
         return http.build();
-    }
-
-    /**
-     * 配置用户信息，或者配置用户数据来源，主要用于用户的检索。
-     *
-     * @return
-     */
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails userDetails = User.withDefaultPasswordEncoder()
-                .username("user")
-                .password("password")
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(userDetails);
     }
 
     /**
      * oauth2 用于第三方认证，RegisteredClientRepository 主要用于管理第三方（每个第三方就是一个客户端）
      *
-     * @return
+     * @return RegisteredClientRepository 用于客户端管理
      */
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                //客户端id
                 .clientId("messaging-client")
+                //客户端密钥
                 .clientSecret("{noop}secret")
+                //客户端认证方式：basic
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                //认证授权方式：授权码
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                //认证授权方式： 刷新token
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                //认证授权方式： 客户端凭证
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                //重定向地址
                 .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
                 .redirectUri("http://127.0.0.1:8080/authorized")
                 .scope(OidcScopes.OPENID)
@@ -142,8 +118,7 @@ public class SecurityConfig {
                 .scope("message.write")
                 .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
                 .build();
-
-        return new InMemoryRegisteredClientRepository(registeredClient);
+        return new JdbcRegisteredClientRepository(getJdbcTemplate());
     }
 
     /**
@@ -172,12 +147,15 @@ public class SecurityConfig {
     private static KeyPair generateRsaKey() {
         KeyPair keyPair;
         try {
+            //密钥生成器
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(2048);
             keyPair = keyPairGenerator.generateKeyPair();
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
+        PrivateKey aPrivate = keyPair.getPrivate();
+        PublicKey aPublic = keyPair.getPublic();
         return keyPair;
     }
 

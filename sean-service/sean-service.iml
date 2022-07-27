@@ -145,5 +145,14 @@
     <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.15" level="project" />
     <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.9.0" level="project" />
     <orderEntry type="library" name="Maven: org.projectlombok:lombok:1.18.24" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-starter-oauth2-resource-server:2.7.1" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-config:5.7.2" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-core:5.7.2" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-oauth2-resource-server:5.7.2" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-oauth2-core:5.7.2" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-web:5.7.2" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-oauth2-jose:5.7.2" level="project" />
+    <orderEntry type="library" name="Maven: com.nimbusds:nimbus-jose-jwt:9.22" level="project" />
+    <orderEntry type="library" name="Maven: com.github.stephenc.jcip:jcip-annotations:1.0-1" level="project" />
   </component>
 </module>

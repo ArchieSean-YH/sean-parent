@@ -11,13 +11,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -37,7 +32,7 @@ import java.util.UUID;
  * @Author ArchieSean
  * @Date 2022-06-11 21:46
  */
-@EnableGlobalMethodSecurity(securedEnabled = true,prePostEnabled = true)
+@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 public class SecurityConfig {
 
     @Resource
@@ -91,33 +86,12 @@ public class SecurityConfig {
     }
 
     /**
-     * oauth2 用于第三方认证，RegisteredClientRepository 主要用于管理第三方（每个第三方就是一个客户端）
+     * 客户端管理，使用数据库存储客户端数据
      *
-     * @return RegisteredClientRepository 用于客户端管理
+     * @return RegisteredClientRepository
      */
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
-        RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                //客户端id
-                .clientId("messaging-client")
-                //客户端密钥
-                .clientSecret("{noop}secret")
-                //客户端认证方式：basic
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                //认证授权方式：授权码
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                //认证授权方式： 刷新token
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                //认证授权方式： 客户端凭证
-                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                //重定向地址
-                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
-                .redirectUri("http://127.0.0.1:8080/authorized")
-                .scope(OidcScopes.OPENID)
-                .scope("message.read")
-                .scope("message.write")
-                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
-                .build();
         return new JdbcRegisteredClientRepository(getJdbcTemplate());
     }
 

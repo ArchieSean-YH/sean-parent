@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.cloud.bootstrap.encrypt.KeyProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,14 +15,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
+import org.springframework.security.rsa.crypto.KeyStoreKeyFactory;
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.UUID;
@@ -39,6 +38,8 @@ public class SecurityConfig {
     private AuthorizationUserDetail userDetails;
     @Resource
     private DataSource dataSource;
+    @Resource
+    private KeyProperties keyProperties;
 
     /**
      * 加密方式，使用Bcrypt散列加密
@@ -115,22 +116,22 @@ public class SecurityConfig {
 
     /**
      * 生成秘钥对，为jwkSource提供服务。
+     * 使用自生成的RSA密钥，方便外部系统使用公钥对于jwt进行解析，获取相关数据
      *
      * @return keyPair
      */
-    private static KeyPair generateRsaKey() {
-        KeyPair keyPair;
-        try {
-            //密钥生成器
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);
-            keyPair = keyPairGenerator.generateKeyPair();
-        } catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
-        PrivateKey aPrivate = keyPair.getPrivate();
-        PublicKey aPublic = keyPair.getPublic();
-        return keyPair;
+    private KeyPair generateRsaKey() {
+        //keyProperties的配置来自配置文件，查看源码即可看到配置前缀
+        return new KeyStoreKeyFactory(
+                //证书路径
+                keyProperties.getKeyStore().getLocation(),
+                //密钥
+                keyProperties.getKeyStore().getSecret().toCharArray())
+                .getKeyPair(
+                        //证书别名
+                        keyProperties.getKeyStore().getAlias(),
+                        //证书密码
+                        keyProperties.getKeyStore().getPassword().toCharArray());
     }
 
     /**

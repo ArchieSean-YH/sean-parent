@@ -68,7 +68,7 @@
     <orderEntry type="library" name="Maven: org.springframework:spring-oxm:5.3.21" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-context-support:5.3.21" level="project" />
     <orderEntry type="library" name="Maven: io.lettuce:lettuce-core:6.1.8.RELEASE" level="project" />
-    <orderEntry type="library" name="Maven: org.redisson:redisson:3.17.3" level="project" />
+    <orderEntry type="library" name="Maven: org.redisson:redisson:3.17.5" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-common:4.1.78.Final" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-codec:4.1.78.Final" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-buffer:4.1.78.Final" level="project" />
@@ -81,7 +81,7 @@
     <orderEntry type="library" name="Maven: javax.cache:cache-api:1.1.1" level="project" />
     <orderEntry type="library" name="Maven: io.projectreactor:reactor-core:3.4.19" level="project" />
     <orderEntry type="library" name="Maven: org.reactivestreams:reactive-streams:1.0.4" level="project" />
-    <orderEntry type="library" name="Maven: io.reactivex.rxjava3:rxjava:3.0.12" level="project" />
+    <orderEntry type="library" name="Maven: io.reactivex.rxjava3:rxjava:3.1.5" level="project" />
     <orderEntry type="library" name="Maven: org.jboss.marshalling:jboss-marshalling:2.0.11.Final" level="project" />
     <orderEntry type="library" name="Maven: org.jboss.marshalling:jboss-marshalling-river:2.0.11.Final" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.36" level="project" />
@@ -119,7 +119,6 @@
     <orderEntry type="library" name="Maven: com.alibaba.cloud:spring-cloud-starter-alibaba-sentinel:2021.0.1.0" level="project" />
     <orderEntry type="library" name="Maven: com.alibaba.csp:sentinel-transport-simple-http:1.8.3" level="project" />
     <orderEntry type="library" name="Maven: com.alibaba.csp:sentinel-transport-common:1.8.3" level="project" />
-    <orderEntry type="library" name="Maven: com.alibaba:fastjson:1.2.75" level="project" />
     <orderEntry type="library" name="Maven: com.alibaba.csp:sentinel-annotation-aspectj:1.8.3" level="project" />
     <orderEntry type="library" name="Maven: com.alibaba.csp:sentinel-core:1.8.3" level="project" />
     <orderEntry type="library" name="Maven: org.aspectj:aspectjweaver:1.9.7" level="project" />

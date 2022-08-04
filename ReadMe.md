@@ -20,3 +20,6 @@
 ## 密钥生成方式
 
 * jdk17+keytool生成
+
+## 日志收集
+* grafana+loki

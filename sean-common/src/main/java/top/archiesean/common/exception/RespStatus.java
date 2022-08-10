@@ -10,6 +10,7 @@ import lombok.Getter;
  */
 @Getter
 public enum RespStatus {
+    //------------统一异常处理-------------
     SUCCESS(200, "success"),
     FAIL(10000, "system error");
 

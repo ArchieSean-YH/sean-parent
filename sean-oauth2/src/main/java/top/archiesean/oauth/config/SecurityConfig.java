@@ -1,146 +1,55 @@
 package top.archiesean.oauth.config;
 
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
-import org.springframework.cloud.bootstrap.encrypt.KeyProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
-import org.springframework.security.rsa.crypto.KeyStoreKeyFactory;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
-import javax.annotation.Resource;
-import javax.sql.DataSource;
-import java.security.KeyPair;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.util.UUID;
-
 /**
- * 配置类
+ * SpringSecurity配置
  *
- * @Author ArchieSean
- * @Date 2022-06-11 21:46
+ * @author ArchieSean
+ * @since 2022-08-08 10:35
  */
-@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
+@Configuration
 public class SecurityConfig {
-
-    @Resource
-    private AuthorizationUserDetail userDetails;
-    @Resource
-    private DataSource dataSource;
-    @Resource
-    private KeyProperties keyProperties;
-
     /**
-     * 加密方式，使用Bcrypt散列加密
-     *
-     * @return BCryptPasswordEncoder
+     * @param http HttpSecurity
+     * @return SecurityFilterChain
+     * @throws Exception ex
      */
     @Bean
-    public BCryptPasswordEncoder bCryptPasswordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public JdbcTemplate getJdbcTemplate() {
-        return new JdbcTemplate(dataSource);
-    }
-
-    /**
-     * 这个也是个Spring Security的过滤器链，用于Spring Security的身份认证。
-     * 同 security的配置
-     *
-     * @param http http
-     * @return 过滤器链
-     * @throws Exception 异常
-     */
-    @Bean
-    @Order(1)
+    @Order(2)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
             throws Exception {
         http
-                .csrf().disable()
-                .httpBasic()
-                .and()
-                .formLogin()
-                .and()
-                .antMatcher("/login")
-                .antMatcher("/layout")
-                .authorizeHttpRequests()
-                .anyRequest()
-                .authenticated()
-                .and()
-                .userDetailsService(userDetails)
-                .passwordManagement(a -> bCryptPasswordEncoder())
-        ;
+                .authorizeHttpRequests((authorize) -> authorize
+                        .anyRequest().authenticated()
+                )
+                .formLogin(Customizer.withDefaults());
+
         return http.build();
     }
 
     /**
-     * 客户端管理，使用数据库存储客户端数据
+     * 配置用户信息，或者配置用户数据来源，主要用于用户的检索。
      *
-     * @return RegisteredClientRepository
+     * @return UserDetailsService
      */
     @Bean
-    public RegisteredClientRepository registeredClientRepository() {
-        return new JdbcRegisteredClientRepository(getJdbcTemplate());
-    }
-
-    /**
-     * 用于给access_token签名使用。
-     *
-     * @return JWKSource<SecurityContext>
-     */
-    @Bean
-    public JWKSource<SecurityContext> jwkSource() {
-        KeyPair keyPair = generateRsaKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
+    public UserDetailsService userDetailsService() {
+        UserDetails userDetails = User.withDefaultPasswordEncoder()
+                .username("user")
+                .password("password")
+                .roles("USER")
                 .build();
-        JWKSet jwkSet = new JWKSet(rsaKey);
-        return new ImmutableJWKSet<>(jwkSet);
-    }
 
-    /**
-     * 生成秘钥对，为jwkSource提供服务。
-     * 使用自生成的RSA密钥，方便外部系统使用公钥对于jwt进行解析，获取相关数据
-     *
-     * @return keyPair
-     */
-    private KeyPair generateRsaKey() {
-        //keyProperties的配置来自配置文件，查看源码即可看到配置前缀
-        return new KeyStoreKeyFactory(
-                //证书路径
-                keyProperties.getKeyStore().getLocation(),
-                //密钥
-                keyProperties.getKeyStore().getSecret().toCharArray())
-                .getKeyPair(
-                        //证书别名
-                        keyProperties.getKeyStore().getAlias(),
-                        //证书密码
-                        keyProperties.getKeyStore().getPassword().toCharArray());
-    }
-
-    /**
-     * 配置Authorization Server实例
-     *
-     * @return ProviderSettings
-     */
-    @Bean
-    public ProviderSettings providerSettings() {
-        return ProviderSettings.builder().build();
+        return new InMemoryUserDetailsManager(userDetails);
     }
 }

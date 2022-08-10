@@ -153,5 +153,6 @@
     <orderEntry type="library" name="Maven: org.springframework.security:spring-security-oauth2-jose:5.7.2" level="project" />
     <orderEntry type="library" name="Maven: com.nimbusds:nimbus-jose-jwt:9.22" level="project" />
     <orderEntry type="library" name="Maven: com.github.stephenc.jcip:jcip-annotations:1.0-1" level="project" />
+    <orderEntry type="library" name="Maven: cn.hutool:hutool-core:5.8.4" level="project" />
   </component>
 </module>

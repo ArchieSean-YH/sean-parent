@@ -20,6 +20,22 @@
 ## 密钥生成方式
 
 * jdk17+keytool生成
+````txt
+keytool -genkeypair -alias testkey -keyalg RSA -keypass keypassword -keystore test.keystore -storepass keystorypassword
+选项解释：
+-alias 别名
+-keyalg 使用的hash算法
+-keypass 密钥库密码
+-keystore  密钥库文件名
+-storepass 密钥库的访问密码
 
+
+encrypt:
+  key-store:
+    alias: sean
+    password: ArchieSean
+    location: classpath:sean.jks
+    secret: ArchieSean@163.com
+````
 ## 日志收集
 * grafana+loki

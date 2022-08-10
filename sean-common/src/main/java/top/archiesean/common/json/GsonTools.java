@@ -73,6 +73,7 @@ public class GsonTools {
         builder.registerTypeAdapter(LocalDateTime.class, dateTimeDeserializer);
         builder.registerTypeAdapter(LocalDate.class, dateDeserializer);
         builder.registerTypeAdapter(LocalTime.class, timeDeserializer);
+        //创建gson实例
         gson = builder.create();
     }
 

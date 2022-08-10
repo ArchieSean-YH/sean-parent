@@ -42,12 +42,20 @@ public class IdWork {
 
     /**
      * 获取雪花id
+     *
      * @return long
      */
     public synchronized long snowflakeId() {
         return snowflake.nextId();
     }
 
+    /**
+     * 获取雪花id
+     *
+     * @param workerId     工作进程位
+     * @param datacenterId 数据位
+     * @return 雪花id
+     */
     public synchronized long snowflakeId(long workerId, long datacenterId) {
         return IdUtil.getSnowflake(workerId, datacenterId).nextId();
     }
@@ -55,6 +63,6 @@ public class IdWork {
     public static void main(String[] args) {
         IdWork idWork = new IdWork();
         System.out.println(idWork.snowflakeId());
-        System.out.println(idWork.snowflakeId(0, 2));
+        System.out.println(idWork.snowflakeId(0, 1));
     }
 }
